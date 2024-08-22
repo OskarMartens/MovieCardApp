@@ -1,0 +1,6 @@
+@MovieCardApp.API_HostAddress = http://localhost:5216
+
+GET {{MovieCardApp.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
