@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MovieCardApp.API.Data;
 
@@ -11,9 +12,11 @@ using MovieCardApp.API.Data;
 namespace MovieCardApp.API.Migrations
 {
     [DbContext(typeof(MovieCardAppContext))]
-    partial class MovieCardAppContextModelSnapshot : ModelSnapshot
+    [Migration("20240826142958_init3")]
+    partial class init3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -84,9 +87,6 @@ namespace MovieCardApp.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("DirectorId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
@@ -94,9 +94,6 @@ namespace MovieCardApp.API.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DirectorId")
-                        .IsUnique();
 
                     b.ToTable("contact_information");
                 });
@@ -204,17 +201,6 @@ namespace MovieCardApp.API.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MovieCardApp.API.Models.Entities.ContactInformation", b =>
-                {
-                    b.HasOne("MovieCardApp.API.Models.Entities.Director", "Director")
-                        .WithOne("ContactInformation")
-                        .HasForeignKey("MovieCardApp.API.Models.Entities.ContactInformation", "DirectorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Director");
-                });
-
             modelBuilder.Entity("MovieCardApp.API.Models.Entities.Movie", b =>
                 {
                     b.HasOne("MovieCardApp.API.Models.Entities.Director", "director")
@@ -228,8 +214,6 @@ namespace MovieCardApp.API.Migrations
 
             modelBuilder.Entity("MovieCardApp.API.Models.Entities.Director", b =>
                 {
-                    b.Navigation("ContactInformation");
-
                     b.Navigation("Movies");
                 });
 #pragma warning restore 612, 618

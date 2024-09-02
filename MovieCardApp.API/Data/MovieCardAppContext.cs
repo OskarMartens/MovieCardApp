@@ -1,19 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using MovieCardApp.API.Models.Entities;
 
 namespace MovieCardApp.API.Data
 {
     public class MovieCardAppContext : DbContext
     {
-        public MovieCardAppContext (DbContextOptions<MovieCardAppContext> options)
+        public MovieCardAppContext(DbContextOptions<MovieCardAppContext> options)
             : base(options)
         {
         }
 
-        public DbSet<MovieCardApp.API.Models.Entities.Movie> Movie { get; set; } = default!;
+        public DbSet<Movie> Movie { get; set; } = default!;
+        public DbSet<Actor> Actor { get; set; } = default!;
+        public DbSet<Director> Director { get; set; } = default!;
+        public DbSet<Genre> Genre { get; set; } = default!;
+        public DbSet<ContactInformation> ContactInformation { get; set; } = default!;
     }
 }

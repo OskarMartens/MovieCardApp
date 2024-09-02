@@ -18,5 +18,9 @@ namespace MovieCardApp.API.Models.Entities
 
         public string? Description { get; set; }
 
+        public Director Director { get; set; }
+        public ICollection<Actor> Actors { get; set; }
+        public ICollection<Genre> Genres { get; set; }
+
     }
 }

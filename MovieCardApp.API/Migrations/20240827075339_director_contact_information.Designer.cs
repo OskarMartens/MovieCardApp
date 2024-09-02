@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MovieCardApp.API.Data;
 
@@ -11,9 +12,11 @@ using MovieCardApp.API.Data;
 namespace MovieCardApp.API.Migrations
 {
     [DbContext(typeof(MovieCardAppContext))]
-    partial class MovieCardAppContextModelSnapshot : ModelSnapshot
+    [Migration("20240827075339_director_contact_information")]
+    partial class director_contact_information
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

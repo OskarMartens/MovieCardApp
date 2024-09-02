@@ -1,7 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using FluentValidation.Results;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MovieCardApp.API.Data;
+using MovieCardApp.API.Models.DTOS.MovieDTOS;
 using MovieCardApp.API.Models.Entities;
+using MovieCardApp.API.Models.Validators;
+using MovieCardApp.API.Services.MovieServ;
 
 namespace MovieCardApp.API.Controllers
 {
@@ -10,40 +15,146 @@ namespace MovieCardApp.API.Controllers
     public class MoviesController : ControllerBase
     {
         private readonly MovieCardAppContext _context;
+        private readonly IMapper _mapper;
+        private readonly IMovieService _movieService;
 
-        public MoviesController(MovieCardAppContext context)
+
+        public MoviesController(
+            MovieCardAppContext context,
+            IMapper mapper,
+            IMovieService movieService)
         {
             _context = context;
+            _mapper = mapper;
+            _movieService = movieService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Movie>>> GetMovie()
+        public async Task<ActionResult<IEnumerable<MovieGetDTO?>>> GetMovies()
         {
-            return await _context.Movie.ToListAsync();
+            var movies = await _movieService.GetMovies();
+            if (movies == null)
+                return BadRequest();
+
+            return Ok(movies);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Movie>> GetMovie(int id)
+        public async Task<ActionResult<MovieGetDTO?>> GetMovie(int id)
         {
-            var movie = await _context.Movie.FindAsync(id);
-
-            if (movie == null)
-            {
+            var movieDto = await _movieService.GetMovieById(id);
+            if (movieDto == null)
                 return NotFound();
+
+            return Ok(movieDto);
+        }
+
+        [HttpGet("{id}/details")]
+        public async Task<ActionResult<MovieGetDetailedDTO>> GetDetailedMovie(int id)
+        {
+            var detailedMovieDTO = await _movieService.GetDetailedMovieById(id);
+            if (detailedMovieDTO == null)
+                return BadRequest();
+
+            return Ok(detailedMovieDTO);
+        }
+
+
+        [HttpPost]
+        public async Task<ActionResult<Movie>> PostMovie(MoviePostDTO movieDTO)
+        {
+            var movie2 = _movieService.PostMovie(movieDTO);
+
+            if (movieDTO.DirectorId == null &&
+                movieDTO.DirectorFirstName != null &&
+                movieDTO.DirectorLastName != null)
+                return BadRequest();
+
+            Director director;
+            if (movieDTO.DirectorId != null)
+                director = await _context.Director.FindAsync(movieDTO.DirectorId);
+            else
+            {
+                director = new Director()
+                {
+                    FirstName = movieDTO.DirectorFirstName!,
+                    LastName = movieDTO.DirectorLastName!
+                };
             }
 
-            return movie;
+
+            //var directorFromDB2 = await _context.Director.Where(
+            //    d => d.LastName.ToUpper().Equals(movieDTO.DirectorLastName.ToUpper()) &&
+            //        d.FirstName.ToUpper().Equals(movieDTO.DirectorFirstName.ToUpper()))
+            //       .FirstOrDefaultAsync();
+
+            var movie = _mapper.Map<Movie>(movieDTO);
+            movie.Director = director!;
+
+            if (movieDTO.GenreIds.Any())
+            {
+                movie.Genres = new List<Genre>();
+                foreach (var genreId in movieDTO.GenreIds)
+                {
+                    var genre = await _context.Genre.FindAsync(genreId);
+                    if (genre != null)
+                    {
+                        movie.Genres.Add(genre);
+                    };
+                };
+            };
+
+            //var movie = new Movie()
+            //{
+            //    Title = movieDTO.Title,
+            //    Rating = movieDTO.Rating,
+            //    ReleaseDate = movieDTO.ReleaseDate,
+            //    Description = movieDTO.Description,
+            //    Director = director,
+            //    Genres = genres
+            //};
+
+
+            _context.Movie.Add(movie);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetMovie", new { id = movie.Id }, movieDTO);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutMovie(int id, Movie movie)
+        public async Task<IActionResult> PutMovie(int id, MoviePutDTO movieDTO)
         {
-            if (id != movie.Id)
+
+            if (id != movieDTO.Id)
             {
                 return BadRequest();
-            }
+            };
 
-            _context.Entry(movie).State = EntityState.Modified;
+            var validator = new MoviePutDTOValidator();
+            ValidationResult results = validator.Validate(movieDTO);
+
+            if (!results.IsValid)
+            {
+                foreach (var failure in results.Errors)
+                {
+                    await Console.Out.WriteLineAsync(
+                        $"Property {failure.PropertyName} failed validation. " +
+                        $"Error was: {failure.ErrorMessage}");
+                };
+            };
+
+            Movie? movieFromDB = await _context.Movie.FindAsync(id);
+            if (movieFromDB == null)
+            {
+                return NotFound();
+            };
+
+            movieFromDB.Title = movieDTO.Title;
+            movieFromDB.Rating = movieDTO.Rating;
+            movieFromDB.ReleaseDate = movieDTO.ReleaseDate;
+            movieFromDB.Description = movieDTO.Description;
+
+            _context.Entry(movieFromDB).State = EntityState.Modified;
 
             try
             {
@@ -51,27 +162,12 @@ namespace MovieCardApp.API.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!MovieExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+                throw;
+            };
 
             return NoContent();
         }
 
-        [HttpPost]
-        public async Task<ActionResult<Movie>> PostMovie(Movie movie)
-        {
-            _context.Movie.Add(movie);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetMovie", new { id = movie.Id }, movie);
-        }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteMovie(int id)
@@ -86,11 +182,6 @@ namespace MovieCardApp.API.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool MovieExists(int id)
-        {
-            return _context.Movie.Any(e => e.Id == id);
         }
     }
 }
