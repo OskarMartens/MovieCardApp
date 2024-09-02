@@ -11,5 +11,10 @@ namespace MovieCardApp.API.Repositories.DirectorRep
         {
             return await _context.Director.FindAsync(id);
         }
+
+        public Task<Director?> GetDirectorById(int? id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
